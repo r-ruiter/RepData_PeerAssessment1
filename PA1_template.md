@@ -1,26 +1,15 @@
----
-title: "Reproducible Research Course Project 1"
-author: "Robert Ruiter"
-date: "21 february 2017"
-output: 
-    html_document:
-        keep_md: true
----
+# Reproducible Research Course Project 1
+Robert Ruiter  
+21 february 2017  
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
-library(ggplot2)
-```
+
 
 # Introduction
 
 This project is about analyzing data taken from an activity monitoring device such as [FitBit](http://www.fitbit.com/).
 The data provided contains two months of steps taken in 5 minutes intervals each day from an anonymous individual.
 
-```{r environment, echo=FALSE}
-## Run on:
-## R 3.3.1, Windows 10 x64
-```
+
 
 ## Getting the data
 
@@ -34,7 +23,8 @@ The dataset is stored in a comma-separated-value (CSV) file and there are a tota
 
 ### Loading and processing the data
 First get the data:
-```{r getdata}
+
+```r
 url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
 fname <- "data/activity.zip"
 download.file(url, fname, mode = "wb")
@@ -42,21 +32,24 @@ unzip(fname, exdir = "data")
 ```
 
 Then read the data and convert variable date to date format:
-```{r readdata}
+
+```r
 dfActivity <- read.csv("data/activity.csv", colClasses = c("numeric", "character", "numeric"))
 dfActivity$date <- as.Date(dfActivity$date, "%Y-%m-%d")
 ```
 
 ### The mean total number of steps taken per day
 
-```{r totalsteps}
+
+```r
 dfSteps.Total <- aggregate(steps ~ date, dfActivity, sum)
 ```
 
-The mean of total steps is `r format(mean(dfSteps.Total$steps), nsmall = 2)`.  
-The median of total steps is `r format(median(dfSteps.Total$steps), nsmall = 2)`.  
+The mean of total steps is 10766.19.  
+The median of total steps is 10765.00.  
 
-```{r hist1, fig.cap="*Fig 1. Total Steps per Day*", fig.height=4, fig.width=6}
+
+```r
 hist(dfSteps.Total$steps, 
      col = "grey", 
      main = "Variaton of Total Steps per Day", 
@@ -64,15 +57,19 @@ hist(dfSteps.Total$steps,
      breaks = 25)
 ```
 
+![*Fig 1. Total Steps per Day*](PA1_template_files/figure-html/hist1-1.png)
+
 ### The average daily pattern
 
 Calculate the average steps taken per interval for each day.
-```{r avgStepsPerDay}
+
+```r
 dfSteps.by.interval <- aggregate(steps ~ interval, dfActivity, mean)
 ```
 
 
-```{r plot1, fig.cap="*Fig 2. Average Steps per Interval*", fig.height=4, fig.width=6}
+
+```r
 plot(dfSteps.by.interval$steps ~ dfSteps.by.interval$interval,
      type = "l",
      main = "Average Steps per Interval",
@@ -80,32 +77,35 @@ plot(dfSteps.by.interval$steps ~ dfSteps.by.interval$interval,
      ylab = "Avg Steps")
 ```
 
+![*Fig 2. Average Steps per Interval*](PA1_template_files/figure-html/plot1-1.png)
+
 Calculate which interval has the most steps taken:
-```{r maxsteps}
+
+```r
 maxSteps <- dfSteps.by.interval[which.max(dfSteps.by.interval$steps), ]
 ```
 
-The interval with the most steps taken is `r format(maxSteps[,1])`, that is `r format(maxSteps[, 2], digits = 3)` steps.
+The interval with the most steps taken is 835, that is 206 steps.
 
 ### Missing values
 
 Check the dataset for missing values:
-```{r missing, results="hide"}
+
+```r
 sum(is.na(dfActivity$steps))
 ```
 
-```{r percmissing, echo=FALSE}
-p <- sum(is.na(dfActivity$steps)) / length(dfActivity$steps) * 100
-```
 
-The number of missing values in variable **steps** is `r sum(is.na(dfActivity$steps))`, that's `r format(p, digits = 3)`% of the total observations.
+
+The number of missing values in variable **steps** is 2304, that's 13.1% of the total observations.
 
 #### Imputing missing values
 
 The number of missing values is quite high and has impact on the results. Therefore the missing values will be 'imputed'. For this the average of each interval over all days will be taken and imputed in the missing observations.
 First copy the original data to a new dataframe, calculate the average steps per interval and impute that value in the missing interval:
 
-```{r impute}
+
+```r
 dfImputed <- dfActivity
 x <- is.na(dfImputed$steps)
 dfImputed$steps_imputed <- dfImputed$steps
@@ -115,7 +115,8 @@ dfSteps.Total.Imputed = aggregate(steps_imputed ~ date, dfImputed, sum)
 ```
 
 
-```{r hist2, fig.cap="*Fig 3. Total Steps per Day with imputed data*", fig.height=4, fig.width=6}
+
+```r
 hist(dfSteps.Total.Imputed$steps_imputed, 
      col = "grey", 
      main = "Variaton of Total Steps", 
@@ -123,20 +124,24 @@ hist(dfSteps.Total.Imputed$steps_imputed,
      breaks = 25)
 ```
 
-* The mean of total steps is `r format(mean(dfSteps.Total.Imputed$steps_imputed), nsmall = 2)`.  
-* The median of total steps is `r format(median(dfSteps.Total.Imputed$steps_imputed), nsmall = 2)`.  
-* The difference in total steps taken between the imputed and original data is `r format(sum(dfSteps.Total.Imputed$steps_imputed) - sum(dfSteps.Total$steps), digits = 4)`.
+![*Fig 3. Total Steps per Day with imputed data*](PA1_template_files/figure-html/hist2-1.png)
+
+* The mean of total steps is 10766.19.  
+* The median of total steps is 10766.19.  
+* The difference in total steps taken between the imputed and original data is 86130.
 
 ## Differences in activity patterns between weekend and weekdays
 
 Add a factorvariable to the imputed dataset to compare the activity patterns.
-```{r weekend}
+
+```r
 dfImputed$type.of.day <- as.factor(ifelse(format(dfImputed$date, "%w") %in% c(0, 6), "weekend", "weekday"))
 
 dfSteps.by.interval.imputed <- aggregate(steps_imputed ~ type.of.day + interval, dfImputed, mean)
 ```
 
-```{r plot2, fig.cap="*Fig 4. Activity Pattern per Daytype*", fig.height=5, fig.width=6}
+
+```r
 g <- ggplot(dfSteps.by.interval.imputed, aes(interval, steps_imputed))
 g <- g + geom_line(aes(color = type.of.day)) + 
     labs(color = "Daytype", title = "Activity pattern", y = "# steps") + 
@@ -147,4 +152,6 @@ g <- g + geom_line(aes(color = type.of.day)) +
           panel.border = element_rect(linetype = 1, fill = NA, color = "darkgrey"))
 print(g)
 ```
+
+![*Fig 4. Activity Pattern per Daytype*](PA1_template_files/figure-html/plot2-1.png)
 
